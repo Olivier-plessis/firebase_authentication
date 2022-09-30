@@ -38,16 +38,22 @@ class AuthenticationRepository {
     });
   }
 
-  Future<void> signUpWithEmailAndPassword(
-      {required String email, required String password}) async {
+  Future<User?> signUpWithEmailAndPassword(
+      {required String email,
+      required String password,
+      required String? fullName}) async {
     try {
-      await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCredential =
+          await _firebaseAuth.createUserWithEmailAndPassword(
+              email: email.trim(), password: password);
+
+      if (userCredential.additionalUserInfo?.isNewUser == true) {
+        return userCredential.user;
+      }
     } on FirebaseAuthException catch (e) {
       throw SignUpWithEmailAndPasswordFailure(e.code);
     }
+    return null;
   }
 
   Future<void> signInWithEmailAndPassword({
@@ -72,7 +78,7 @@ class AuthenticationRepository {
     }
   }
 
-  Future<bool?> signInWithGoogle() async {
+  Future<User?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleSignInAccount =
           await _googleSignIn.signIn();
@@ -91,7 +97,9 @@ class AuthenticationRepository {
       final UserCredential userCredential =
           await _firebaseAuth.signInWithCredential(credential);
 
-      return userCredential.additionalUserInfo?.isNewUser;
+      if (userCredential.additionalUserInfo?.isNewUser == true) {
+        return userCredential.user;
+      }
     } on FirebaseAuthException catch (_) {
       throw SignInWithGoogleFailure();
     }
